@@ -174,21 +174,39 @@ impl VoiceController {
     }
 }
 
-/// Update text in the focused window
+/// Update text in the focused window using incremental updates
 ///
-/// Deletes the old text and inserts the new text
+/// Uses prefix matching to minimize deletions and insertions:
+/// 1. Find the common prefix between old and new text
+/// 2. Only delete characters beyond the common prefix
+/// 3. Only append the new suffix
+/// 
+/// This significantly reduces visual flickering compared to full replacement.
 fn update_text(text_inserter: &TextInserter, old_text: &str, new_text: &str) -> Result<()> {
-    // Calculate characters to delete
-    let chars_to_delete = old_text.chars().count();
-
-    // Delete old text
+    // 找到公共前缀长度（无需删除和重新输入的部分）
+    let common_prefix_len = old_text
+        .chars()
+        .zip(new_text.chars())
+        .take_while(|(a, b)| a == b)
+        .count();
+    
+    // 计算需要删除的字符数 = 旧文本超出公共前缀的部分
+    let chars_to_delete = old_text.chars().count() - common_prefix_len;
+    
+    // 需要追加的文本 = 新文本超出公共前缀的部分
+    let text_to_append: String = new_text.chars().skip(common_prefix_len).collect();
+    
+    // 执行增量更新
     if chars_to_delete > 0 {
         text_inserter.delete_chars(chars_to_delete)?;
     }
-
-    // Insert new text
-    text_inserter.insert(new_text)?;
-
-    tracing::debug!("Updated text: '{}' -> '{}'", old_text, new_text);
+    if !text_to_append.is_empty() {
+        text_inserter.insert(&text_to_append)?;
+    }
+    
+    tracing::debug!(
+        "Updated text incrementally: '{}' -> '{}' (kept {} chars, deleted {}, appended '{}')",
+        old_text, new_text, common_prefix_len, chars_to_delete, text_to_append
+    );
     Ok(())
 }
