@@ -13,33 +13,13 @@ use tray_icon::{
 
 use crate::business::{HotkeyManager, VoiceController};
 use crate::data::AppConfig;
-use crate::ui::{ButtonState, FloatingButton, FloatingButtonConfig, FloatingButtonEvent};
 
-/// Run the application with system tray and floating button
+/// Run the application with system tray
 pub async fn run_app(
-    config: AppConfig,
+    _config: AppConfig,
     voice_controller: Arc<Mutex<VoiceController>>,
     _hotkey_manager: HotkeyManager,
 ) -> Result<()> {
-    // Create floating button
-    let mut floating_button = FloatingButton::new();
-    let button_state_setter = floating_button.state_setter();
-    let floating_rx = floating_button.take_event_receiver();
-
-    // Configure floating button position from config
-    let fb_config = FloatingButtonConfig {
-        initial_x: config.floating_button.position_x,
-        initial_y: config.floating_button.position_y,
-        size: 56,
-    };
-
-    // Spawn floating button thread if enabled
-    if config.floating_button.enabled {
-        std::thread::spawn(move || {
-            floating_button.run(fb_config);
-        });
-    }
-
     // Create tray icon on main thread
     let icon = load_icon()?;
     let menu = Menu::new();
@@ -74,44 +54,15 @@ pub async fn run_app(
     // Running flag
     let running = Arc::new(AtomicBool::new(true));
 
-    // Get menu and floating button receivers
+    // Get menu receiver
     let menu_rx = MenuEvent::receiver();
 
     // Get tokio runtime handle for async operations
     let runtime_handle = tokio::runtime::Handle::current();
 
-    // Set up hotkey callback with state sync
-    let vc_for_hotkey = voice_controller.clone();
-    let state_for_hotkey = button_state_setter.clone();
-    let handle_for_hotkey = runtime_handle.clone();
-    _hotkey_manager.on_trigger(move || {
-        let vc = vc_for_hotkey.clone();
-        let setter = state_for_hotkey.clone();
-        let handle = handle_for_hotkey.clone();
-        handle.spawn(async move {
-            let mut controller = vc.lock().await;
-            if controller.is_recording() {
-                tracing::info!("Hotkey: stopping voice input");
-                setter.set_state(ButtonState::Processing);
-                if let Err(e) = controller.stop().await {
-                    tracing::error!("Failed to stop voice input: {}", e);
-                }
-                setter.set_state(ButtonState::Idle);
-            } else {
-                tracing::info!("Hotkey: starting voice input");
-                if let Err(e) = controller.start().await {
-                    tracing::error!("Failed to start voice input: {}", e);
-                } else {
-                    setter.set_state(ButtonState::Recording);
-                }
-            }
-        });
-    });
-
-    // Spawn event handler thread for menu and floating button events
+    // Spawn event handler thread for menu events
     let running_clone = running.clone();
     let vc_clone = voice_controller.clone();
-    let state_setter_clone = button_state_setter.clone();
 
     std::thread::spawn(move || {
         while running_clone.load(Ordering::SeqCst) {
@@ -119,46 +70,48 @@ pub async fn run_app(
             if let Ok(event) = menu_rx.recv_timeout(std::time::Duration::from_millis(50)) {
                 if event.id == start_id {
                     let vc = vc_clone.clone();
-                    let setter = state_setter_clone.clone();
                     runtime_handle.spawn(async move {
                         let mut controller = vc.lock().await;
                         if !controller.is_recording() {
                             tracing::info!("Starting from menu");
                             if let Err(e) = controller.start().await {
                                 tracing::error!("Failed to start: {}", e);
-                            } else {
-                                setter.set_state(ButtonState::Recording);
                             }
                         }
                     });
                 } else if event.id == stop_id {
                     let vc = vc_clone.clone();
-                    let setter = state_setter_clone.clone();
                     runtime_handle.spawn(async move {
                         let mut controller = vc.lock().await;
                         if controller.is_recording() {
                             tracing::info!("Stopping from menu");
-                            setter.set_state(ButtonState::Processing);
                             if let Err(e) = controller.stop().await {
                                 tracing::error!("Failed to stop: {}", e);
                             }
-                            setter.set_state(ButtonState::Idle);
                         }
                     });
                 } else if event.id == settings_id {
                     tracing::info!("Settings from menu");
+                    // Platform-specific settings message
                     #[cfg(target_os = "windows")]
                     {
                         use windows::core::w;
-                        use windows::Win32::UI::WindowsAndMessaging::{MessageBoxW, MB_OK, MB_ICONINFORMATION};
+                        use windows::Win32::UI::WindowsAndMessaging::{
+                            MessageBoxW, MB_ICONINFORMATION, MB_OK,
+                        };
                         unsafe {
                             MessageBoxW(
                                 None,
-                                w!("豆包语音输入 设置\n\n快捷键: 双击 Ctrl 开始/停止录音\n悬浮按钮: 点击切换录音状态\n\n配置文件: config.toml"),
+                                w!("豆包语音输入 设置\n\n快捷键: 双击 Ctrl 开始/停止录音\n\n配置文件: config.toml"),
                                 w!("设置"),
                                 MB_OK | MB_ICONINFORMATION,
                             );
                         }
+                    }
+                    #[cfg(target_os = "macos")]
+                    {
+                        // macOS settings placeholder
+                        tracing::info!("macOS: Settings dialog not yet implemented");
                     }
                 } else if event.id == quit_id {
                     tracing::info!("Quit from menu");
@@ -166,44 +119,6 @@ pub async fn run_app(
                     #[cfg(target_os = "windows")]
                     unsafe {
                         windows::Win32::UI::WindowsAndMessaging::PostQuitMessage(0);
-                    }
-                }
-            }
-
-            // Check floating button events
-            if let Some(ref rx) = floating_rx {
-                if let Ok(event) = rx.try_recv() {
-                    match event {
-                        FloatingButtonEvent::ToggleRecording => {
-                            let vc = vc_clone.clone();
-                            let setter = state_setter_clone.clone();
-                            runtime_handle.spawn(async move {
-                                let mut controller = vc.lock().await;
-                                if controller.is_recording() {
-                                    tracing::info!("Toggle: stopping");
-                                    setter.set_state(ButtonState::Processing);
-                                    if let Err(e) = controller.stop().await {
-                                        tracing::error!("Failed to stop: {}", e);
-                                    }
-                                    setter.set_state(ButtonState::Idle);
-                                } else {
-                                    tracing::info!("Toggle: starting");
-                                    if let Err(e) = controller.start().await {
-                                        tracing::error!("Failed to start: {}", e);
-                                    } else {
-                                        setter.set_state(ButtonState::Recording);
-                                    }
-                                }
-                            });
-                        }
-                        FloatingButtonEvent::Exit => {
-                            tracing::info!("Exit from floating button");
-                            running_clone.store(false, Ordering::SeqCst);
-                            #[cfg(target_os = "windows")]
-                            unsafe {
-                                windows::Win32::UI::WindowsAndMessaging::PostQuitMessage(0);
-                            }
-                        }
                     }
                 }
             }
@@ -253,8 +168,8 @@ fn load_icon() -> Result<tray_icon::Icon> {
     let radius = (width.min(height) as f32 / 2.0) - 1.0;
 
     // Modern gradient colors (purple to blue)
-    let color_start = (139u8, 92u8, 246u8);  // Purple
-    let color_end = (59u8, 130u8, 246u8);    // Blue
+    let color_start = (139u8, 92u8, 246u8); // Purple
+    let color_end = (59u8, 130u8, 246u8); // Blue
 
     for y in 0..height {
         for x in 0..width {
@@ -265,9 +180,12 @@ fn load_icon() -> Result<tray_icon::Icon> {
             if dist <= radius {
                 // Gradient based on position (top-left to bottom-right)
                 let gradient_t = ((x as f32 / width as f32) + (y as f32 / height as f32)) / 2.0;
-                let r = (color_start.0 as f32 * (1.0 - gradient_t) + color_end.0 as f32 * gradient_t) as u8;
-                let g = (color_start.1 as f32 * (1.0 - gradient_t) + color_end.1 as f32 * gradient_t) as u8;
-                let b = (color_start.2 as f32 * (1.0 - gradient_t) + color_end.2 as f32 * gradient_t) as u8;
+                let r = (color_start.0 as f32 * (1.0 - gradient_t)
+                    + color_end.0 as f32 * gradient_t) as u8;
+                let g = (color_start.1 as f32 * (1.0 - gradient_t)
+                    + color_end.1 as f32 * gradient_t) as u8;
+                let b = (color_start.2 as f32 * (1.0 - gradient_t)
+                    + color_end.2 as f32 * gradient_t) as u8;
 
                 // Soft edge anti-aliasing
                 let alpha = if dist > radius - 1.5 {

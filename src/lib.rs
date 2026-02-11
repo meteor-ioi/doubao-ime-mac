@@ -7,6 +7,7 @@ pub mod asr;
 pub mod audio;
 pub mod business;
 pub mod data;
+pub mod platform;
 pub mod ui;
 
 pub use asr::AsrClient;

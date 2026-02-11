@@ -15,8 +15,6 @@ pub struct AppConfig {
     #[serde(default)]
     pub hotkey: HotkeyConfig,
     #[serde(default)]
-    pub floating_button: FloatingButtonConfig,
-    #[serde(default)]
     pub asr: AsrConfig,
 }
 
@@ -25,7 +23,6 @@ impl Default for AppConfig {
         Self {
             general: GeneralConfig::default(),
             hotkey: HotkeyConfig::default(),
-            floating_button: FloatingButtonConfig::default(),
             asr: AsrConfig::default(),
         }
     }
@@ -81,6 +78,8 @@ pub struct GeneralConfig {
     pub auto_start: bool,
     #[serde(default = "default_language")]
     pub language: String,
+    #[serde(default)]
+    pub hide_dock_icon: bool,
 }
 
 fn default_language() -> String {
@@ -92,6 +91,7 @@ impl Default for GeneralConfig {
         Self {
             auto_start: false,
             language: default_language(),
+            hide_dock_icon: false,
         }
     }
 }
@@ -136,33 +136,8 @@ impl Default for HotkeyConfig {
     }
 }
 
-/// Floating button configuration
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct FloatingButtonConfig {
-    #[serde(default = "default_true")]
-    pub enabled: bool,
-    #[serde(default = "default_position")]
-    pub position_x: i32,
-    #[serde(default = "default_position")]
-    pub position_y: i32,
-}
-
 fn default_true() -> bool {
     true
-}
-
-fn default_position() -> i32 {
-    100
-}
-
-impl Default for FloatingButtonConfig {
-    fn default() -> Self {
-        Self {
-            enabled: true,
-            position_x: 100,
-            position_y: 100,
-        }
-    }
 }
 
 /// ASR configuration

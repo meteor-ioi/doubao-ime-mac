@@ -510,16 +510,23 @@ dependencies = [
 
 [[package]]
 name = "doubao-voice-input"
-version = "1.1.0"
+version = "1.1.1"
 dependencies = [
  "anyhow",
  "base64",
+ "block",
+ "cocoa",
+ "core-foundation",
+ "core-graphics",
  "cpal",
+ "foreign-types",
  "futures-util",
  "global-hotkey",
  "hex",
  "image",
+ "libc",
  "md5",
+ "objc",
  "opus",
  "prost",
  "prost-build",

@@ -46,6 +46,16 @@ windows = { version = "0.52", features = [
     "Win32_Graphics_Gdi",
 ] }
 
+# macOS specific dependencies
+[target.'cfg(target_os = "macos")'.dependencies]
+core-graphics = "0.23"
+core-foundation = "0.9"
+cocoa = "0.25"
+objc = "0.2"
+block = "0.1"
+foreign-types = "0.5"
+libc = "0.2"
+
 # Configuration
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"

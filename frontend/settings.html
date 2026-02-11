@@ -1,0 +1,474 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>偏好设置</title>
+    <style>
+        :root {
+            --bg: #ffffff;
+            --text: #171717;
+            --gray-100: #fafafa;
+            --gray-200: #eaeaea;
+            --gray-400: #a1a1a1;
+            --gray-600: #666666;
+            --accent: #0070f3;
+            --accent-radius: 6px;
+            --border: 1px solid var(--gray-200);
+            --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+        }
+
+        @media (prefers-color-scheme: dark) {
+            :root {
+                --bg: #000000;
+                --text: #ededed;
+                --gray-100: #111111;
+                --gray-200: #333333;
+                --gray-400: #888888;
+                --gray-600: #999999;
+                --accent: #ffffff;
+                --border: 1px solid var(--gray-200);
+            }
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            user-select: none;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Inter", sans-serif;
+            background-color: var(--bg);
+            color: var(--text);
+            height: 100vh;
+            overflow: hidden;
+            border: var(--border);
+        }
+
+        .container {
+            display: flex;
+            height: 100%;
+        }
+
+        .sidebar {
+            width: 180px;
+            background-color: var(--gray-100);
+            border-right: var(--border);
+            padding: 24px 8px;
+        }
+
+        .sidebar ul {
+            list-style: none;
+        }
+
+        .sidebar li {
+            padding: 8px 12px;
+            margin-bottom: 2px;
+            cursor: pointer;
+            font-size: 13px;
+            border-radius: var(--accent-radius);
+            color: var(--gray-600);
+            transition: all 0.2s;
+            position: relative;
+        }
+
+        .sidebar li:hover {
+            background: var(--gray-200);
+            color: var(--text);
+        }
+
+        .sidebar li.active {
+            background: var(--bg);
+            color: var(--text);
+            font-weight: 500;
+            box-shadow: var(--shadow-sm);
+        }
+
+        .sidebar li.active::before {
+            content: "";
+            position: absolute;
+            left: 0;
+            top: 8px;
+            bottom: 8px;
+            width: 2px;
+            background-color: var(--accent);
+            border-radius: 0 2px 2px 0;
+        }
+
+        .main-content {
+            flex: 1;
+            padding: 32px 48px;
+            overflow-y: auto;
+        }
+
+        h2 {
+            font-size: 20px;
+            margin-bottom: 24px;
+            font-weight: 700;
+            letter-spacing: -0.02em;
+        }
+
+        .setting-group {
+            margin-bottom: 32px;
+        }
+
+        .setting-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 16px;
+            font-size: 14px;
+        }
+
+        .setting-item label {
+            color: var(--gray-600);
+            font-weight: 400;
+        }
+
+        input[type="checkbox"] {
+            width: 32px;
+            height: 18px;
+            appearance: none;
+            background-color: var(--gray-200);
+            border-radius: 9px;
+            position: relative;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        input[type="checkbox"]:checked {
+            background-color: var(--accent);
+        }
+
+        input[type="checkbox"]::after {
+            content: "";
+            position: absolute;
+            top: 2px;
+            left: 2px;
+            width: 14px;
+            height: 14px;
+            background-color: white;
+            border-radius: 50%;
+            transition: transform 0.2s;
+        }
+
+        input[type="checkbox"]:checked::after {
+            transform: translateX(14px);
+        }
+
+        select,
+        input[type="text"] {
+            padding: 6px 10px;
+            border-radius: var(--accent-radius);
+            border: var(--border);
+            background: var(--bg);
+            color: var(--text);
+            font-size: 13px;
+            outline: none;
+            min-width: 120px;
+            transition: border-color 0.2s;
+        }
+
+        select:focus,
+        input[type="text"]:focus {
+            border-color: var(--accent);
+        }
+
+        input[type="text"].recording {
+            border-color: var(--accent);
+            background-color: var(--gray-100);
+            color: var(--accent);
+            text-align: center;
+            font-weight: 600;
+        }
+
+        button {
+            padding: 8px 16px;
+            border-radius: var(--accent-radius);
+            border: var(--border);
+            background: var(--text);
+            color: var(--bg);
+            cursor: pointer;
+            font-size: 13px;
+            font-weight: 500;
+            transition: opacity 0.2s;
+        }
+
+        button:hover {
+            opacity: 0.9;
+        }
+
+        .tab-content {
+            display: none;
+            animation: fadeIn 0.2s ease-out;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(4px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .description {
+            font-size: 12px;
+            color: var(--gray-400);
+            margin-top: 4px;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <aside class="sidebar">
+            <ul id="sidebar-menu">
+                <li data-tab="general" class="active">通用</li>
+                <li data-tab="hotkey">热键</li>
+                <li data-tab="about">关于</li>
+            </ul>
+        </aside>
+        <main class="main-content">
+            <!-- 通用设置 -->
+            <div id="general" class="tab-content active">
+                <h2>通用设置</h2>
+                <div class="setting-group">
+                    <div class="setting-item">
+                        <label for="auto-start">开机自动启动</label>
+                        <input type="checkbox" id="auto-start">
+                    </div>
+                    <div class="setting-item">
+                        <label for="hide-dock">隐藏 Dock 图标</label>
+                        <input type="checkbox" id="hide-dock">
+                    </div>
+                    <div class="setting-item">
+                        <label for="language">界面语言</label>
+                        <select id="language">
+                            <option value="zh-CN">简体中文</option>
+                            <option value="en-US">English</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 热键设置 -->
+            <div id="hotkey" class="tab-content">
+                <h2>输入热键</h2>
+                <div class="setting-group">
+                    <div class="setting-item">
+                        <label>触发模式</label>
+                        <div style="display: flex; gap: 12px;">
+                            <label style="display: flex; align-items: center; gap: 4px; color: var(--text);">
+                                <input type="radio" name="hotkey-mode" value="double_tap" id="mode-double">
+                                双击
+                            </label>
+                            <label style="display: flex; align-items: center; gap: 4px; color: var(--text);">
+                                <input type="radio" name="hotkey-mode" value="combo" id="mode-combo">
+                                组合键
+                            </label>
+                        </div>
+                    </div>
+                    <div class="setting-item">
+                        <div>
+                            <label for="double-tap-key">双击键</label>
+                            <div class="description">双击此键触发录音</div>
+                        </div>
+                        <select id="double-tap-key">
+                            <option value="Control">Control</option>
+                            <option value="Command">Command</option>
+                            <option value="Option">Option</option>
+                            <option value="Shift">Shift</option>
+                        </select>
+                    </div>
+                    <div class="setting-item">
+                        <div>
+                            <label for="combo-key">组合快捷键</label>
+                            <div class="description">点击并在键盘上按下</div>
+                        </div>
+                        <input type="text" id="combo-key" readonly placeholder="点击开始录制">
+                    </div>
+                </div>
+            </div>
+
+
+            <!-- 关于 -->
+            <div id="about" class="tab-content">
+                <h2>关于</h2>
+                <div class="setting-group">
+                    <div style="background: var(--gray-100); padding: 20px; border-radius: 8px; border: var(--border);">
+                        <p style="font-weight: 600; margin-bottom: 8px;">Doubao Voice Input</p>
+                        <p style="font-size: 13px; color: var(--gray-600); line-height: 1.6;">
+                            版本: 1.1.1<br>
+                            基于豆包 ASR 引擎的流式语音输入工具。<br>
+                            专注于 macOS 原生、高效的录音体验。
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        const { invoke } = window.__TAURI__.core;
+
+        let config = null;
+
+        // Tab 切换逻辑
+        document.getElementById('sidebar-menu').addEventListener('click', (e) => {
+            const li = e.target.closest('li');
+            if (li) {
+                const tabId = li.getAttribute('data-tab');
+                document.querySelectorAll('.sidebar li').forEach(el => el.classList.remove('active'));
+                li.classList.add('active');
+                document.querySelectorAll('.tab-content').forEach(div => div.classList.remove('active'));
+                document.getElementById(tabId).classList.add('active');
+            }
+        });
+
+        // 加载配置
+        async function loadConfig() {
+            try {
+                config = await invoke('get_config');
+                renderConfig();
+            } catch (err) {
+                console.error('Failed to load config:', err);
+            }
+        }
+
+        // 渲染配置到页面
+        function renderConfig() {
+            if (!config) return;
+
+            document.getElementById('auto-start').checked = config.general.auto_start;
+            document.getElementById('hide-dock').checked = config.general.hide_dock_icon;
+            document.getElementById('language').value = config.language || 'zh-CN';
+
+            // Hotkey
+            const mode = config.hotkey.mode || 'combo';
+            const radio = document.querySelector(`input[name="hotkey-mode"][value="${mode}"]`);
+            if (radio) radio.checked = true;
+
+            document.getElementById('double-tap-key').value = config.hotkey.double_tap_key || 'Control';
+            document.getElementById('combo-key').value = config.hotkey.combo_key || 'Control+Shift+V';
+        }
+
+        // 监听并保存配置
+        async function save() {
+            if (!config) return;
+
+            config.general.auto_start = document.getElementById('auto-start').checked;
+            config.general.hide_dock_icon = document.getElementById('hide-dock').checked;
+            config.language = document.getElementById('language').value;
+
+            const selectedMode = document.querySelector('input[name="hotkey-mode"]:checked');
+            if (selectedMode) {
+                config.hotkey.mode = selectedMode.value;
+            }
+
+            config.hotkey.double_tap_key = document.getElementById('double-tap-key').value;
+            config.hotkey.combo_key = document.getElementById('combo-key').value;
+
+            await invoke('save_config', { config });
+        }
+
+        // 绑定普通事件
+        document.querySelectorAll('input:not([type="text"]), select').forEach(el => {
+            el.addEventListener('change', save);
+        });
+
+        // 组合键录制逻辑
+        const comboInput = document.getElementById('combo-key');
+        let recording = false;
+
+        comboInput.addEventListener('click', () => {
+            if (!recording) {
+                recording = true;
+                comboInput.classList.add('recording');
+                comboInput.value = '正在录制...';
+            }
+        });
+
+        // e.code -> 物理按键名映射表
+        function codeToKeyName(code) {
+            // 字母键: KeyA -> A
+            if (code.startsWith('Key')) return code.slice(3);
+            // 数字键: Digit0 -> 0
+            if (code.startsWith('Digit')) return code.slice(5);
+            // 小键盘: Numpad0 -> Numpad0
+            if (code.startsWith('Numpad')) return code;
+            // 功能键: F1-F24
+            if (/^F\d+$/.test(code)) return code;
+            // 特殊键映射
+            const specialMap = {
+                'Space': 'Space', 'Enter': 'Enter', 'Escape': 'Escape',
+                'Backspace': 'Backspace', 'Tab': 'Tab', 'Delete': 'Delete',
+                'ArrowUp': 'Up', 'ArrowDown': 'Down', 'ArrowLeft': 'Left', 'ArrowRight': 'Right',
+                'Home': 'Home', 'End': 'End', 'PageUp': 'PageUp', 'PageDown': 'PageDown',
+                'BracketLeft': '[', 'BracketRight': ']', 'Backslash': '\\',
+                'Semicolon': ';', 'Quote': "'", 'Comma': ',', 'Period': '.', 'Slash': '/',
+                'Minus': '-', 'Equal': '=', 'Backquote': '`',
+            };
+            return specialMap[code] || code;
+        }
+
+        window.addEventListener('keydown', (e) => {
+            if (!recording) return;
+            e.preventDefault();
+
+            const keys = [];
+
+            // macOS 修饰键
+            if (e.ctrlKey) keys.push('Control');
+            if (e.shiftKey) keys.push('Shift');
+            if (e.altKey) keys.push('Alt');
+            if (e.metaKey) keys.push('Command');
+
+            const code = e.code;
+            // 纯修饰键按下时只更新显示
+            if (['ControlLeft', 'ControlRight', 'ShiftLeft', 'ShiftRight',
+                'AltLeft', 'AltRight', 'MetaLeft', 'MetaRight'].includes(code)) {
+                if (keys.length > 0) {
+                    comboInput.value = keys.join('+');
+                }
+            } else {
+                // 非修饰键：通过 e.code 获取物理按键名
+                const keyName = codeToKeyName(code);
+                keys.push(keyName);
+
+                const comboString = keys.join('+');
+                comboInput.value = comboString;
+                config.hotkey.combo_key = comboString;
+
+                // 停止录制并保存
+                recording = false;
+                comboInput.classList.remove('recording');
+                save();
+            }
+        });
+
+        // Handle clicking outside to stop recording
+        window.addEventListener('mousedown', (e) => {
+            if (recording && e.target !== comboInput) {
+                recording = false;
+                comboInput.classList.remove('recording');
+                comboInput.value = config.hotkey.combo_key || 'Control+Shift+V';
+            }
+        });
+
+        window.onload = loadConfig;
+    </script>
+</body>
+
+</html>
