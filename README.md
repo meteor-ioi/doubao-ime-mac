@@ -18,7 +18,7 @@
 
 ### 安装使用
 
-1. 从 [Releases](https://github.com/EvanDbg/doubao-ime-win/releases) 下载最新的 `.dmg` 安装包。
+1. 从 [Releases](https://github.com/meteor-ioi/doubao-ime-mac/releases) 下载最新的 `.dmg` 安装包。
 2. 打开并将 **语音输入法** 拖动到应用程序文件夹 (Applications)。
 3. 首次启动时，请按照系统提示授予 **辅助功能 (Accessibility)** 权限，以便程序模拟文本输入及追踪光标位置。
 
@@ -49,8 +49,8 @@
 
 ```bash
 # 克隆项目
-git clone https://github.com/EvanDbg/doubao-ime-win.git
-cd doubao-ime-win
+git clone https://github.com/meteor-ioi/doubao-ime-mac.git
+cd doubao-ime-mac
 
 # 安装依赖并打包 (生成 .dmg)
 sh build_mac.sh
