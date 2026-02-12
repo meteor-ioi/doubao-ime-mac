@@ -40,8 +40,9 @@
 ## 🚀 最近主要更新
 
 - **v1.3.0 (2026-02-12)**:
-    - **架构纯化**：项目全面转型为纯 macOS 版本，移除并归档所有 Windows 相关遗留代码及工具。
+    - **架构纯化**：项目全面转型为纯 macOS 版本，移除并归档所有 Windows 相关遗留代码及工具至 `legacy_windows`。
     - **目录清理**：整理根目录图标资源，移除冗余脚本。
+    - **云端迁移**：迁移至新 GitHub 仓库 `doubao-ime-mac`，并配置 Actions 自动构建通用版 `.dmg`。
 - **v1.2.0 (2026-02-11)**:
     - **架构迁移**：全面迁移至 Tauri v2 框架，并完成 macOS 深度适配。
     - **指示器进化**：升级为“紫胶囊”造型，去除阴影，解决背景不透明及动效切除问题。
@@ -51,6 +52,13 @@
     - 进一步清理无用代码，减小体积。
 - **v1.1.0 (2026-02-05)**: 
     - **重磅更新**：实现增量更新算法，彻底解决文本闪烁。
+
+## 🙏 致谢
+
+本项目在开发过程中参考并基于以下优秀项目：
+
+- [EvanDbg/doubao-ime-win](https://github.com/EvanDbg/doubao-ime-win) - 原项目（Windows 版本）及核心逻辑参考。
+- [starccy/doubaoime-asr](https://github.com/starccy/doubaoime-asr) - 豆包 ASR 协议参考实现。
 
 ---
 *Created by Gemini for project overview.*
