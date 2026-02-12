@@ -1,6 +1,7 @@
 # Generated files
 /target/
 /dist/
+/legacy_windows/
 
 # Cargo lock (optional for applications)
 # Cargo.lock
@@ -21,7 +22,7 @@ credentials.json
 
 # OS files
 .DS_Store
-Thumbs.db
+# Thumbs.db
 
 # Logs
 *.log

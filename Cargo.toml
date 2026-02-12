@@ -7,6 +7,9 @@ description = "Windows voice input tool using Doubao ASR"
 license = "MIT"
 repository = "https://github.com/yourusername/doubao-ime-win"
 
+[lints.rust]
+unexpected_cfgs = { level = "allow", check-cfg = ['cfg(cargo_clippy)'] }
+
 [dependencies]
 # Async runtime
 tokio = { version = "1.35", features = ["full"] }
@@ -33,18 +36,6 @@ global-hotkey = "0.5"
 # System tray
 tray-icon = "0.14"
 
-# Windows API
-[target.'cfg(windows)'.dependencies]
-windows = { version = "0.52", features = [
-    "Win32_Foundation",
-    "Win32_UI_Input_KeyboardAndMouse",
-    "Win32_UI_WindowsAndMessaging",
-    "Win32_Security_Cryptography",
-    "Win32_System_DataExchange",
-    "Win32_System_Com",
-    "Win32_System_LibraryLoader",
-    "Win32_Graphics_Gdi",
-] }
 
 # macOS specific dependencies
 [target.'cfg(target_os = "macos")'.dependencies]
@@ -80,6 +71,9 @@ hex = "0.4"
 
 # MD5 hashing (for x-ss-stub header)
 md5 = "0.7"
+
+# Cross-platform standard directories
+dirs = "5.0"
 
 # Crypto (for DPAPI alternative - simple encryption)
 ring = "0.17"

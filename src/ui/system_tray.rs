@@ -93,21 +93,6 @@ pub async fn run_app(
                 } else if event.id == settings_id {
                     tracing::info!("Settings from menu");
                     // Platform-specific settings message
-                    #[cfg(target_os = "windows")]
-                    {
-                        use windows::core::w;
-                        use windows::Win32::UI::WindowsAndMessaging::{
-                            MessageBoxW, MB_ICONINFORMATION, MB_OK,
-                        };
-                        unsafe {
-                            MessageBoxW(
-                                None,
-                                w!("豆包语音输入 设置\n\n快捷键: 双击 Ctrl 开始/停止录音\n\n配置文件: config.toml"),
-                                w!("设置"),
-                                MB_OK | MB_ICONINFORMATION,
-                            );
-                        }
-                    }
                     #[cfg(target_os = "macos")]
                     {
                         // macOS settings placeholder
@@ -116,41 +101,15 @@ pub async fn run_app(
                 } else if event.id == quit_id {
                     tracing::info!("Quit from menu");
                     running_clone.store(false, Ordering::SeqCst);
-                    #[cfg(target_os = "windows")]
-                    unsafe {
-                        windows::Win32::UI::WindowsAndMessaging::PostQuitMessage(0);
-                    }
                 }
             }
         }
     });
 
     // Run Win32 message loop on main thread (REQUIRED for tray icon to work)
-    #[cfg(target_os = "windows")]
-    {
-        use windows::Win32::UI::WindowsAndMessaging::{
-            DispatchMessageW, GetMessageW, TranslateMessage, MSG,
-        };
-
-        tracing::info!("Running Win32 message loop on main thread");
-        let mut msg = MSG::default();
-        unsafe {
-            while GetMessageW(&mut msg, None, 0, 0).as_bool() {
-                let _ = TranslateMessage(&msg);
-                DispatchMessageW(&msg);
-
-                if !running.load(Ordering::SeqCst) {
-                    break;
-                }
-            }
-        }
-    }
-
-    #[cfg(not(target_os = "windows"))]
-    {
-        while running.load(Ordering::SeqCst) {
-            tokio::time::sleep(std::time::Duration::from_millis(100)).await;
-        }
+    // Event loop for macOS
+    while running.load(Ordering::SeqCst) {
+        tokio::time::sleep(std::time::Duration::from_millis(100)).await;
     }
 
     tracing::info!("Application exiting");

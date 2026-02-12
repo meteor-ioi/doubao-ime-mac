@@ -165,12 +165,35 @@
             padding: 6px 10px;
             border-radius: var(--accent-radius);
             border: var(--border);
-            background: var(--bg);
+            background-color: var(--bg);
             color: var(--text);
             font-size: 13px;
             outline: none;
-            min-width: 120px;
+            width: 160px;
+            /* Unified width for alignment */
             transition: border-color 0.2s;
+        }
+
+        /* Select specific styles (Arrow etc) */
+        select {
+            padding-right: 32px;
+            /* Space for custom arrow */
+            /* Remove default system appearance */
+            appearance: none;
+            -webkit-appearance: none;
+
+            /* Custom SVG Arrow */
+            background-image: url('data:image/svg+xml;charset=US-ASCII,<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="%23666666" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>');
+            background-repeat: no-repeat;
+            background-position: right 8px center;
+            background-size: 14px;
+        }
+
+        /* Dark mode arrow adjustment */
+        @media (prefers-color-scheme: dark) {
+            select {
+                background-image: url('data:image/svg+xml;charset=US-ASCII,<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="%23999999" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>');
+            }
         }
 
         select:focus,
@@ -227,6 +250,17 @@
             font-size: 12px;
             color: var(--gray-400);
             margin-top: 4px;
+        }
+
+        a {
+            color: var(--accent);
+            text-decoration: none;
+            transition: opacity 0.2s;
+        }
+
+        a:hover {
+            text-decoration: underline;
+            opacity: 0.8;
         }
     </style>
 </head>
@@ -316,9 +350,19 @@
                         </p>
                     </div>
                 </div>
-            </div>
+
+                <div class="setting-group">
+                    <p style="font-size: 13px; font-weight: 600; margin-bottom: 12px; color: var(--gray-600);">致谢项目</p>
+                    <div style="display: flex; flex-direction: column; gap: 10px;">
+                        <a href="https://github.com/EvanDbg/doubao-ime-win" target="_blank"
+                            style="font-size: 13px;">EvanDbg/doubao-ime-win</a>
+                        <a href="https://github.com/starccy/doubaoime-asr" target="_blank"
+                            style="font-size: 13px;">starccy/doubaoime-asr</a>
+                    </div>
+                </div>
+            </div> <!-- about tab-content -->
         </main>
-    </div>
+    </div> <!-- container -->
 
     <script>
         const { invoke } = window.__TAURI__.core;

@@ -29,22 +29,26 @@ impl Default for AppConfig {
 }
 
 impl AppConfig {
+    /// Get the app data directory (~/Library/Application Support/语音输入法/)
+    fn app_data_dir() -> PathBuf {
+        let dir = dirs::config_dir()
+            .unwrap_or_else(|| PathBuf::from("."))
+            .join("语音输入法");
+        // Ensure directory exists
+        if !dir.exists() {
+            let _ = fs::create_dir_all(&dir);
+        }
+        dir
+    }
+
     /// Get the config file path
     pub fn config_path() -> PathBuf {
-        let exe_dir = std::env::current_exe()
-            .ok()
-            .and_then(|p| p.parent().map(|p| p.to_path_buf()))
-            .unwrap_or_else(|| PathBuf::from("."));
-        exe_dir.join("config.toml")
+        Self::app_data_dir().join("config.toml")
     }
 
     /// Get the credentials file path
     pub fn credentials_path() -> PathBuf {
-        let exe_dir = std::env::current_exe()
-            .ok()
-            .and_then(|p| p.parent().map(|p| p.to_path_buf()))
-            .unwrap_or_else(|| PathBuf::from("."));
-        exe_dir.join("credentials.json")
+        Self::app_data_dir().join("credentials.json")
     }
 
     /// Load configuration from file or create default
@@ -110,7 +114,7 @@ pub struct HotkeyConfig {
 }
 
 fn default_hotkey_mode() -> String {
-    "combo".to_string()
+    "double_tap".to_string()
 }
 
 fn default_combo_key() -> String {

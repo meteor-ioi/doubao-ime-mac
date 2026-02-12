@@ -4,9 +4,6 @@
 //! - CLI mode: For quick testing (run with --cli flag)
 //! - UI mode: Full application with system tray and hotkeys (default)
 
-// Hide console window in release builds on Windows
-#![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
-
 use anyhow::Result;
 use std::env;
 use std::io::{self, Write};
@@ -41,15 +38,6 @@ async fn run_ui_mode() -> Result<()> {
         "Starting Doubao Voice Input v{} (UI Mode)",
         env!("CARGO_PKG_VERSION")
     );
-
-    // Initialize COM for Windows
-    #[cfg(target_os = "windows")]
-    {
-        use windows::Win32::System::Com::{CoInitializeEx, COINIT_APARTMENTTHREADED};
-        unsafe {
-            let _ = CoInitializeEx(None, COINIT_APARTMENTTHREADED);
-        }
-    }
 
     // Load configuration
     let config = AppConfig::load_or_default()?;

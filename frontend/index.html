@@ -9,6 +9,7 @@
     * {
       margin: 0;
       padding: 0;
+      box-sizing: border-box;
     }
 
     body {
@@ -23,72 +24,211 @@
       height: 100vh;
     }
 
-    .mic-btn {
-      width: 32px;
-      height: 24px;
-      background: #7C3AED;
-      border-radius: 12px;
-      /* Full rounding for height 24 */
+    .blob-container {
+      position: relative;
+      width: 100px;
+      height: 100px;
       display: flex;
       justify-content: center;
       align-items: center;
       opacity: 0;
-      transform: scale(0.5);
-      transition: all 0.15s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-      /* box-shadow removed as requested */
+      transform: scale(0.6);
+      transition: opacity 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275), transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
     }
 
-    .mic-btn.visible {
+    .blob-container.visible {
       opacity: 1;
       transform: scale(1);
     }
 
-    .mic-btn svg {
-      width: 14px;
-      height: 14px;
-      fill: white;
+    .blob {
+      width: 44px;
+      height: 44px;
+      /* Life-like gradient: changing via CSS variables */
+      background: linear-gradient(135deg, var(--blob-color-1, #ff9abd) 0%, var(--blob-color-2, #f77fac) 100%);
+      border-radius: 50%;
+      /* Water balloon volume effect */
+      box-shadow:
+        inset 0 0 10px rgba(255, 255, 255, 0.6),
+        inset 10px 10px 20px rgba(255, 255, 255, 0.3),
+        inset -10px -10px 20px rgba(0, 0, 0, 0.1),
+        0 8px 20px rgba(247, 127, 172, 0.4);
+
+      /* Organic morphing */
+      animation: morph var(--morph-speed, 6s) ease-in-out infinite, float 5s ease-in-out infinite, breathe 4s ease-in-out infinite;
+
+      display: flex;
+      justify-content: center;
+      align-items: center;
+
+      /* Physics-based smooth transition handled by JS-driven variables */
+      will-change: transform, border-radius, background;
+
+      /* Base scale */
+      transform: scale(var(--blob-scale, 1));
     }
 
-    .mic-btn.pulse {
-      animation: pulse 1.5s infinite ease-in-out;
+    .blob svg {
+      width: 22px;
+      height: 22px;
+      fill: rgba(255, 255, 255, 0.95);
+      filter: drop-shadow(0 2px 4px rgba(168, 85, 247, 0.2));
+      opacity: 0.9;
+      transition: all 0.3s ease;
     }
 
-    @keyframes pulse {
+    @keyframes morph {
+      0% {
+        border-radius: 50% 50% 46% 54% / 55% 45% 50% 50%;
+      }
+
+      33% {
+        border-radius: 52% 48% 50% 50% / 50% 52% 48% 50%;
+      }
+
+      66% {
+        border-radius: 48% 52% 54% 46% / 48% 50% 52% 50%;
+      }
+
+      100% {
+        border-radius: 50% 50% 46% 54% / 55% 45% 50% 50%;
+      }
+    }
+
+    @keyframes float {
 
       0%,
       100% {
-        transform: scale(1);
+        transform: translateY(0);
       }
 
       50% {
-        transform: scale(1.05);
-        /* Subtle scale for rectangle */
+        transform: translateY(-6px);
+      }
+    }
+
+    @keyframes breathe {
+
+      0%,
+      100% {
+        filter: brightness(1);
+      }
+
+      50% {
+        filter: brightness(1.05);
       }
     }
   </style>
 </head>
 
 <body>
-  <div class="mic-btn" id="mic">
-    <svg viewBox="0 0 24 24">
-      <path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3z" />
-      <path d="M17 11c0 2.76-2.24 5-5 5s-5-2.24-5-5H5c0 3.53 2.61 6.43 6 6.92V21h2v-3.08c3.39-.49 6-3.39 6-6.92h-2z" />
-    </svg>
+  <div class="blob-container" id="mic-container" style="--blob-scale: 1; --morph-speed: 6s;">
+    <div class="blob" id="blob-body" data-tauri-drag-region>
+      <svg viewBox="0 0 24 24">
+        <path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3z" />
+        <path
+          d="M17 11c0 2.76-2.24 5-5 5s-5-2.24-5-5H5c0 3.53 2.61 6.43 6 6.92V21h2v-3.08c3.39-.49 6-3.39 6-6.92h-2z" />
+      </svg>
+    </div>
   </div>
 
   <script>
     const { listen } = window.__TAURI__.event;
-    const mic = document.getElementById('mic');
+    const container = document.getElementById('mic-container');
+    const blob = document.getElementById('blob-body');
+
+    // Physics Simulation State
+    let targetVolume = 0;
+    let currentVolume = 0;
+    let isRecording = false;
+    let animationFrameId = null;
+
+    // Configuration
+    const LERP_FACTOR = 0.03; // Lower = smoother/laggier (viscous liquid feel)
+    const MAX_SCALE = 1.8;    // Max expansion
+    const BASE_SPEED = 6;     // Base animation speed in seconds
+    const MIN_SPEED = 0.5;    // Max animation speed (when loud)
+
+    function updatePhysics() {
+      if (!isRecording && currentVolume < 0.1) {
+        // Idle state optimization
+        if (currentVolume !== 0) {
+          currentVolume = 0;
+          renderBlob();
+        }
+        return; // Stop loop when idle
+      }
+
+      // 1. Lerp smoothing (Viscosity)
+      currentVolume += (targetVolume - currentVolume) * LERP_FACTOR;
+
+      // 2. Render visual state
+      renderBlob();
+
+      // 3. Continue loop
+      animationFrameId = requestAnimationFrame(updatePhysics);
+    }
+
+    function renderBlob() {
+      // Map volume (0-100) to Scale (1.0 - MAX_SCALE)
+      // Non-linear mapping for organic feel: volume^0.8
+      const normalizedVol = Math.min(currentVolume, 100) / 100;
+      const scale = 1 + (normalizedVol * (MAX_SCALE - 1));
+
+      container.style.setProperty('--blob-scale', scale.toFixed(3));
+
+      // Map volume to Morph Speed (slower -> faster)
+      // 6s -> 0.5s
+      const speed = BASE_SPEED - (normalizedVol * (BASE_SPEED - MIN_SPEED));
+      container.style.setProperty('--morph-speed', `${speed.toFixed(2)}s`);
+
+      // Dynamic Color shifting
+      // Low: #ff9abd (Pink)
+      // High: #ff4081 (Hot Pink)
+
+      // Color 1
+      const r1 = 255;
+      const g1 = 154 - (normalizedVol * 60); // 154 -> ~94
+      const b1 = 189 - (normalizedVol * 60); // 189 -> ~129
+
+      container.style.setProperty('--blob-color-1', `rgb(${r1}, ${g1}, ${b1})`);
+
+      // Color 2 (Deep side)
+      const r2 = 247;
+      const g2 = 127 - (normalizedVol * 80); // 127 -> ~47
+      const b2 = 172 + (normalizedVol * 40); // 172 -> ~212 (Purple lean)
+
+      container.style.setProperty('--blob-color-2', `rgb(${r2}, ${g2}, ${b2})`);
+    }
 
     listen('asr-status', (event) => {
       const { status } = event.payload;
       if (status === 'recording') {
-        mic.classList.add('visible', 'pulse');
+        isRecording = true;
+        container.classList.add('visible');
+        if (!animationFrameId) {
+          updatePhysics();
+        }
       } else if (status === 'processing') {
-        mic.classList.add('visible');
-        mic.classList.remove('pulse');
+        isRecording = true; // Keep visible
+        targetVolume = 20;  // Gentle pulse while thinking
+        container.classList.add('visible');
       } else {
-        mic.classList.remove('visible', 'pulse');
+        isRecording = false;
+        targetVolume = 0;
+        container.classList.remove('visible');
+        // Let physics loop finish the decay then stop
+      }
+    });
+
+    listen('asr-volume', (event) => {
+      const { volume } = event.payload;
+      // Update target, let Lerp handle the rest
+      targetVolume = volume;
+
+      // If loop stopped but we got volume (edge case), restart
+      if (!animationFrameId && isRecording) {
+        updatePhysics();
       }
     });
   </script>
